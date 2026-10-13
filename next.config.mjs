@@ -6,6 +6,7 @@ const nextConfig = {
   reactStrictMode: true,
   output: isExport ? "export" : undefined,
   basePath: basePath || undefined,
+  trailingSlash: true,
   images: {
     unoptimized: true,
     remotePatterns: [

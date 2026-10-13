@@ -10,11 +10,11 @@
     var repoIndex = pathSegments.indexOf('Kinox');
     var repoPath = repoIndex !== -1 ? '/Kinox' : '';
     
-    // Si l'utilisateur cherchait /watch/xxx, rediriger vers /watch?id=xxx
+    // Si l'utilisateur cherchait /watch/xxx, rediriger vers /watch/?id=xxx
     var fullPath = window.location.pathname;
     if (fullPath.indexOf('/watch/') !== -1) {
-      var id = fullPath.substring(fullPath.indexOf('/watch/') + 7);
-      window.location.replace(repoPath + '/watch?id=' + encodeURIComponent(id));
+      var id = fullPath.substring(fullPath.indexOf('/watch/') + 7).replace(/\/$/, '');
+      window.location.replace(repoPath + '/watch/?id=' + encodeURIComponent(id));
     } else {
       window.location.replace(repoPath + '/');
     }
