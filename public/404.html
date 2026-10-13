@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>KINOX — Redirection</title>
+  <script>
+    // GitHub Pages SPA Single-Page-App redirect handler
+    var pathSegments = window.location.pathname.split('/');
+    // Si nous sommes dans le sous-dossier /Kinox/
+    var repoIndex = pathSegments.indexOf('Kinox');
+    var repoPath = repoIndex !== -1 ? '/Kinox' : '';
+    
+    // Si l'utilisateur cherchait /watch/xxx, rediriger vers /watch?id=xxx
+    var fullPath = window.location.pathname;
+    if (fullPath.indexOf('/watch/') !== -1) {
+      var id = fullPath.substring(fullPath.indexOf('/watch/') + 7);
+      window.location.replace(repoPath + '/watch?id=' + encodeURIComponent(id));
+    } else {
+      window.location.replace(repoPath + '/');
+    }
+  </script>
+</head>
+<body style="background:#08090C;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <p>Chargement de KINOX...</p>
+</body>
+</html>

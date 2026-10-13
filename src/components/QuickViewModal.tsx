@@ -126,7 +126,7 @@ export default function QuickViewModal({
 
             <div className="flex flex-wrap items-center gap-3 mt-4">
               <Link
-                href={`/watch/${current.id}`}
+                href={`/watch?id=${current.id}`}
                 className="inline-flex items-center gap-2 px-7 py-2.5 bg-white hover:bg-gray-200 text-black font-extrabold rounded-md shadow-xl transition-all hover:scale-105 active:scale-95"
               >
                 <Play className="w-4 h-4 fill-current" />

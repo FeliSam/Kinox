@@ -215,7 +215,7 @@ export default function VideoPlayer({
     if (nextEpisodeCountdown === null) return;
     if (nextEpisodeCountdown <= 0) {
       if (playbackData?.nextEpisode) {
-        router.push(`/watch/${playbackData.title.id}?episode=${playbackData.nextEpisode.id}`);
+        router.push(`/watch?id=${playbackData.title.id}&episode=${playbackData.nextEpisode.id}`);
       }
       return;
     }
@@ -352,24 +352,52 @@ export default function VideoPlayer({
       onMouseMove={handleMouseMove}
       className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center select-none"
     >
-      {/* Balise Vidéo */}
-      <video
-        ref={videoRef}
-        playsInline
-        onClick={togglePlay}
-        onTimeUpdate={() => {
-          if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime);
-            setDuration(videoRef.current.duration || 0);
-          }
-        }}
-        onEnded={() => {
-          setIsPlaying(false);
-          saveProgress(true);
-        }}
-        onError={() => setPlaybackError("Erreur lors de la lecture du fichier média.")}
-        className="w-full h-full object-contain cursor-pointer"
-      />
+      {/* Mode YouTube Trailer Officiel si disponible */}
+      {playbackData?.title?.youtubeTrailerKey ? (
+        <div className="w-full h-full relative flex items-center justify-center bg-black">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${playbackData.title.youtubeTrailerKey}?autoplay=1&controls=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1`}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+          {/* Barre supérieure persistante avec bouton retour et informations */}
+          <div className="absolute top-4 left-4 z-50 flex items-center gap-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-gray-700">
+            <button
+              onClick={() => (onBack ? onBack() : router.back())}
+              className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+              aria-label="Retour au catalogue"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <span className="text-xs font-bold text-white truncate max-w-xs">
+              {playbackData.title.name}
+            </span>
+            <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-black uppercase">
+              Bande-Annonce HD
+            </span>
+          </div>
+        </div>
+      ) : (
+        /* Balise Vidéo HLS / MP4 native */
+        <video
+          ref={videoRef}
+          playsInline
+          onClick={togglePlay}
+          onTimeUpdate={() => {
+            if (videoRef.current) {
+              setCurrentTime(videoRef.current.currentTime);
+              setDuration(videoRef.current.duration || 0);
+            }
+          }}
+          onEnded={() => {
+            setIsPlaying(false);
+            saveProgress(true);
+          }}
+          onError={() => setPlaybackError("Erreur lors de la lecture du fichier média.")}
+          className="w-full h-full object-contain cursor-pointer"
+        />
+      )}
 
       {/* Message d'erreur avec bouton réessayer */}
       {playbackError && (
@@ -459,7 +487,7 @@ export default function VideoPlayer({
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                router.push(`/watch/${playbackData.title.id}?episode=${playbackData.nextEpisode.id}`);
+                router.push(`/watch?id=${playbackData.title.id}&episode=${playbackData.nextEpisode.id}`);
               }}
               className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-xs font-bold rounded flex items-center justify-center gap-2"
             >

@@ -102,7 +102,7 @@ export default function Top10Card({
 
           <div className="flex items-center gap-1.5 pt-2 border-t border-gray-800">
             <Link
-              href={`/watch/${title.id}`}
+              href={`/watch?id=${title.id}`}
               className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-xs flex items-center justify-center gap-1"
               title="Lecture"
             >

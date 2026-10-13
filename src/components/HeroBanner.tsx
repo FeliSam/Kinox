@@ -140,7 +140,7 @@ export default function HeroBanner({
           {/* Boutons d'Action Principaux façon Netflix */}
           <div className="flex flex-wrap items-center gap-4 pt-3">
             <Link
-              href={`/watch/${activeTitle.id}`}
+              href={`/watch?id=${activeTitle.id}`}
               className="inline-flex items-center justify-center gap-2.5 px-7 sm:px-9 py-3 bg-white hover:bg-gray-200 text-black font-extrabold text-sm sm:text-base rounded-md transition-all shadow-xl hover:scale-105 active:scale-95"
             >
               <Play className="w-5 h-5 fill-current" />

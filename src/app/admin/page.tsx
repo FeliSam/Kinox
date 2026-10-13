@@ -230,7 +230,7 @@ export default function AdminPage() {
                       </td>
                       <td className="p-3.5 text-right">
                         <Link
-                          href={`/watch/${t.id}`}
+                          href={`/watch?id=${t.id}`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded font-semibold text-[11px]"
                         >
                           <Play className="w-3 h-3" />

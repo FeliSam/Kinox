@@ -20,6 +20,38 @@ export default function WatchClient({ titleId }: WatchClientProps) {
     if (!titleId) return;
 
     setLoading(true);
+    if (titleId.startsWith("tmdb-")) {
+      const tmdbId = titleId.replace("tmdb-", "");
+      const TMDB_KEY = "4e44d9029b1270a757cddc766a1bcb63";
+      const savedLang = typeof window !== "undefined" ? localStorage.getItem("kinox_lang") || "fr-FR" : "fr-FR";
+
+      Promise.all([
+        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_KEY}&language=${savedLang}`).then((r) => r.json()).catch(() => null),
+        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_KEY}&language=${savedLang}`).then((r) => r.json()).catch(() => null),
+      ])
+        .then(([movieData, videoData]) => {
+          let trailerKey = videoData?.results?.find(
+            (v: any) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
+          )?.key;
+
+          setPlaybackData({
+            title: {
+              id: titleId,
+              name: movieData?.title || "Film KINOX",
+              slug: titleId,
+              type: "MOVIE",
+              youtubeTrailerKey: trailerKey || "KT-8QL04x40",
+              hlsManifestUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+              mp4FallbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+            },
+            timedSegments: [],
+            resumePositionSeconds: 0,
+          });
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
     fetch(`/api/v1/playback/${titleId}/session`, { method: "POST" })
       .then(async (res) => {
         if (!res.ok) {

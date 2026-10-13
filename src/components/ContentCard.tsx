@@ -185,7 +185,7 @@ export default function ContentCard({
               <div className="flex items-center gap-2">
                 {/* Bouton Play blanc rond */}
                 <Link
-                  href={`/watch/${title.id}`}
+                  href={`/watch?id=${title.id}`}
                   className="w-9 h-9 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
                   title="Lecture"
                 >
