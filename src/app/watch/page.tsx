@@ -35,14 +35,36 @@ function WatchPlayerContent() {
           .then((r) => r.json())
           .catch(() => null),
       ])
-        .then(([movieData, videoData]) => {
-          let trailerKey = videoData?.results?.find(
+        .then(async ([movieData, videoData]) => {
+          let resolvedData = movieData;
+          let resolvedVideo = videoData;
+
+          // Si c'est une série TV (pas de titre film retourné)
+          if (!resolvedData?.title) {
+            const [tvData, tvVideos] = await Promise.all([
+              fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_KEY}&language=${savedLang}`)
+                .then((r) => r.json())
+                .catch(() => null),
+              fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/videos?api_key=${TMDB_KEY}&language=${savedLang}`)
+                .then((r) => r.json())
+                .catch(() => null),
+            ]);
+            if (tvData?.name) {
+              resolvedData = tvData;
+              resolvedVideo = tvVideos;
+            }
+          }
+
+          let trailerKey = resolvedVideo?.results?.find(
             (v: any) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
           )?.key;
 
+          const titleName = resolvedData?.title || resolvedData?.name || "Film KINOX";
+
           // Si pas de bande-annonce FR, chercher en VO anglais
           if (!trailerKey) {
-            fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_KEY}&language=en-US`)
+            const endpoint = resolvedData?.name && !resolvedData?.title ? "tv" : "movie";
+            fetch(`https://api.themoviedb.org/3/${endpoint}/${tmdbId}/videos?api_key=${TMDB_KEY}&language=en-US`)
               .then((r) => r.json())
               .then((enVideoData) => {
                 const enTrailer = enVideoData?.results?.find(
@@ -51,9 +73,9 @@ function WatchPlayerContent() {
                 setPlaybackData({
                   title: {
                     id: titleId,
-                    name: movieData?.title || "Film KINOX",
+                    name: titleName,
                     slug: titleId,
-                    type: "MOVIE",
+                    type: resolvedData?.name && !resolvedData?.title ? "SERIES" : "MOVIE",
                     youtubeTrailerKey: enTrailer || "KT-8QL04x40",
                     hlsManifestUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
                     mp4FallbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
@@ -74,9 +96,9 @@ function WatchPlayerContent() {
           setPlaybackData({
             title: {
               id: titleId,
-              name: movieData?.title || "Film KINOX",
+              name: titleName,
               slug: titleId,
-              type: "MOVIE",
+              type: resolvedData?.name && !resolvedData?.title ? "SERIES" : "MOVIE",
               youtubeTrailerKey: trailerKey,
               hlsManifestUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
               mp4FallbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",

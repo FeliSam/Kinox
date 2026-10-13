@@ -66,6 +66,7 @@ export default function Navbar({
 
   const navLinks = [
     { label: "Accueil", href: "/" },
+    { label: "Cinéma Français", href: "/francais" },
     { label: "Films", href: "/films" },
     { label: "Séries", href: "/series" },
     { label: "Catégories", href: "/categories" },

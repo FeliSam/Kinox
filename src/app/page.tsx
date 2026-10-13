@@ -7,6 +7,7 @@ import ContentRow from "@/components/ContentRow";
 import QuickViewModal from "@/components/QuickViewModal";
 import Footer from "@/components/Footer";
 import { Film, AlertTriangle, RefreshCw } from "lucide-react";
+import { getLiveCatalog } from "@/lib/tmdb";
 
 export default function HomePage() {
   const [homeData, setHomeData] = useState<any>(null);
@@ -33,13 +34,13 @@ export default function HomePage() {
     }
   }, []);
 
-  // Charger le catalogue en direct (TMDB officiel + profil + Ma Liste)
+  // Charger le catalogue en direct (150+ films TMDB officiel + profil + Ma Liste)
   const loadHome = useCallback(async (langToLoad: "fr-FR" | "en-US" = currentLang) => {
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Essai de chargement du flux TMDB officiel
+      // 1. Essai de chargement depuis l'API locale si disponible
       let feedData: any = null;
       try {
         const resFeed = await fetch(`/api/v1/tmdb/feed?lang=${langToLoad}`);
@@ -47,65 +48,12 @@ export default function HomePage() {
           feedData = await resFeed.json();
         }
       } catch (e) {
-        console.warn("Route serveur non disponible, bascule sur fetch TMDB direct...");
+        // Fallback sur le service direct
       }
 
-      // 2. Si sur GitHub Pages (statique), fetch direct vers l'API TMDB officielle
-      if (!feedData || !feedData.sections) {
-        const TMDB_KEY = "4e44d9029b1270a757cddc766a1bcb63";
-        const [resTrendingMovies, resTrendingTV] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${TMDB_KEY}&language=${langToLoad}`).then((r) => r.json()),
-          fetch(`https://api.themoviedb.org/3/trending/tv/day?api_key=${TMDB_KEY}&language=${langToLoad}`).then((r) => r.json()),
-        ]);
-
-        const formatItem = (item: any, type: "MOVIE" | "SERIES", rank?: number) => ({
-          id: `tmdb-${item.id}`,
-          tmdbId: item.id,
-          name: item.title || item.name,
-          slug: (item.title || item.name || "").toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-"),
-          synopsis: item.overview || "Synopsis officiel indisponible.",
-          type,
-          releaseYear: parseInt((item.release_date || item.first_air_date || "2025").split("-")[0]),
-          ratingScore: item.vote_average ? Math.round(item.vote_average * 10) / 10 : 8.5,
-          matchScore: Math.min(99, Math.max(80, Math.round((item.vote_average || 8) * 10) + 5)),
-          posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
-          bannerUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : `https://image.tmdb.org/t/p/w500${item.poster_path}`,
-          genres: ["Cinéma", type === "MOVIE" ? "Action" : "Série"],
-          topRank: rank,
-          trailerUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-          hlsManifestUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
-          mp4FallbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-        });
-
-        const trendingMovies = (resTrendingMovies?.results || []).slice(0, 10).map((m: any, i: number) => formatItem(m, "MOVIE", i + 1));
-        const trendingSeries = (resTrendingTV?.results || []).slice(0, 10).map((s: any, i: number) => formatItem(s, "SERIES", i + 1));
-
-        feedData = {
-          heroTitles: trendingMovies.slice(0, 5),
-          sections: [
-            {
-              id: "top-10-movies",
-              title: langToLoad === "fr-FR" ? "Top 10 des films en France aujourd'hui" : "Top 10 Movies in France Today",
-              type: "TOP_10",
-              items: trendingMovies,
-              autoScrollEnabled: false,
-            },
-            {
-              id: "trending-movies",
-              title: langToLoad === "fr-FR" ? "Tendances actuelles" : "Trending Now",
-              type: "TRENDING",
-              items: trendingMovies,
-              autoScrollEnabled: true,
-            },
-            {
-              id: "trending-series",
-              title: langToLoad === "fr-FR" ? "Séries les plus populaires" : "Popular TV Shows",
-              type: "SERIES",
-              items: trendingSeries,
-              autoScrollEnabled: false,
-            },
-          ],
-        };
+      // 2. Si sur GitHub Pages ou fallback, charger directement via getLiveCatalog
+      if (!feedData || !feedData.sections || feedData.sections.length < 5) {
+        feedData = await getLiveCatalog(langToLoad);
       }
 
       setHomeData({

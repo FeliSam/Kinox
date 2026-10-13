@@ -142,7 +142,7 @@ export async function getOfficialTrailerKey(tmdbId: number, type: "MOVIE" | "SER
   return null;
 }
 
-// Obtenir le catalogue complet en direct pour la page d'accueil Netflix
+// Obtenir le catalogue complet en direct pour la page d'accueil Netflix (150+ films et séries)
 export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
   const [
     trendingMoviesData,
@@ -151,6 +151,11 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
     topRatedData,
     actionMoviesData,
     sciFiMoviesData,
+    frenchBoxOfficeData,
+    frenchComediesData,
+    frenchThrillersData,
+    frenchClassicsData,
+    frenchAnimationData,
   ] = await Promise.all([
     fetchFromTMDB("/trending/movie/day", { language: lang }),
     fetchFromTMDB("/trending/tv/day", { language: lang }),
@@ -158,6 +163,11 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
     fetchFromTMDB("/movie/top_rated", { language: lang, page: "1" }),
     fetchFromTMDB("/discover/movie", { language: lang, with_genres: "28", sort_by: "popularity.desc" }),
     fetchFromTMDB("/discover/movie", { language: lang, with_genres: "878", sort_by: "popularity.desc" }),
+    fetchFromTMDB("/discover/movie", { language: lang, with_original_language: "fr", sort_by: "popularity.desc", page: "1" }),
+    fetchFromTMDB("/discover/movie", { language: lang, with_original_language: "fr", with_genres: "35", sort_by: "popularity.desc" }),
+    fetchFromTMDB("/discover/movie", { language: lang, with_original_language: "fr", with_genres: "53", sort_by: "popularity.desc" }),
+    fetchFromTMDB("/discover/movie", { language: lang, with_original_language: "fr", sort_by: "vote_average.desc", "vote_count.gte": "150" }),
+    fetchFromTMDB("/discover/movie", { language: lang, with_genres: "16", region: "FR", sort_by: "popularity.desc" }),
   ]);
 
   const trendingMovies: TMDBMedia[] = (trendingMoviesData?.results || [])
@@ -169,19 +179,39 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
     .map((item: any, idx: number) => formatTMDBItem(item, "SERIES", idx + 1));
 
   const nowPlaying: TMDBMedia[] = (nowPlayingData?.results || [])
-    .slice(0, 12)
+    .slice(0, 15)
     .map((item: any) => formatTMDBItem(item, "MOVIE"));
 
   const topRated: TMDBMedia[] = (topRatedData?.results || [])
-    .slice(0, 12)
+    .slice(0, 15)
     .map((item: any) => formatTMDBItem(item, "MOVIE"));
 
   const actionMovies: TMDBMedia[] = (actionMoviesData?.results || [])
-    .slice(0, 12)
+    .slice(0, 15)
     .map((item: any) => formatTMDBItem(item, "MOVIE"));
 
   const sciFiMovies: TMDBMedia[] = (sciFiMoviesData?.results || [])
-    .slice(0, 12)
+    .slice(0, 15)
+    .map((item: any) => formatTMDBItem(item, "MOVIE"));
+
+  const frenchBoxOffice: TMDBMedia[] = (frenchBoxOfficeData?.results || [])
+    .slice(0, 18)
+    .map((item: any) => formatTMDBItem(item, "MOVIE"));
+
+  const frenchComedies: TMDBMedia[] = (frenchComediesData?.results || [])
+    .slice(0, 18)
+    .map((item: any) => formatTMDBItem(item, "MOVIE"));
+
+  const frenchThrillers: TMDBMedia[] = (frenchThrillersData?.results || [])
+    .slice(0, 18)
+    .map((item: any) => formatTMDBItem(item, "MOVIE"));
+
+  const frenchClassics: TMDBMedia[] = (frenchClassicsData?.results || [])
+    .slice(0, 18)
+    .map((item: any) => formatTMDBItem(item, "MOVIE"));
+
+  const frenchAnimation: TMDBMedia[] = (frenchAnimationData?.results || [])
+    .slice(0, 18)
     .map((item: any) => formatTMDBItem(item, "MOVIE"));
 
   // Les 5 titres phares pour le carrousel Hero Banner dynamique
@@ -198,24 +228,52 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
         autoScrollEnabled: false,
       },
       {
+        id: "french-box-office",
+        title: lang === "fr-FR" ? "🇫🇷 Cinéma Français — Les plus grands succès" : "French Cinema Hits",
+        type: "TRENDING",
+        items: frenchBoxOffice,
+        autoScrollEnabled: true,
+      },
+      {
         id: "trending-now",
-        title: lang === "fr-FR" ? "Tendances actuelles" : "Trending Now",
+        title: lang === "fr-FR" ? "Tendances internationales en VF" : "Trending Now",
         type: "TRENDING",
         items: trendingMovies.slice(0, 12),
         autoScrollEnabled: true,
       },
       {
+        id: "french-comedies",
+        title: lang === "fr-FR" ? "🇫🇷 Comédies Françaises populaires & cultes" : "Popular French Comedies",
+        type: "GENRE",
+        items: frenchComedies,
+        autoScrollEnabled: false,
+      },
+      {
         id: "popular-series",
-        title: lang === "fr-FR" ? "Séries incontournables" : "Popular TV Shows",
+        title: lang === "fr-FR" ? "Séries incontournables (VF / VOST)" : "Popular TV Shows",
         type: "SERIES",
         items: trendingSeries,
         autoScrollEnabled: false,
       },
       {
+        id: "french-thrillers",
+        title: lang === "fr-FR" ? "🇫🇷 Polars & Thrillers français" : "French Crime & Thrillers",
+        type: "GENRE",
+        items: frenchThrillers,
+        autoScrollEnabled: false,
+      },
+      {
         id: "now-playing",
-        title: lang === "fr-FR" ? "Nouveautés & Sorties récentes" : "New Releases",
+        title: lang === "fr-FR" ? "Nouveautés & Sorties récentes au cinéma" : "New Releases in Theaters",
         type: "RECENT",
         items: nowPlaying,
+        autoScrollEnabled: false,
+      },
+      {
+        id: "french-classics",
+        title: lang === "fr-FR" ? "🇫🇷 Chefs-d'œuvre du cinéma français" : "French Cinema Masterpieces",
+        type: "RECOMMENDED",
+        items: frenchClassics,
         autoScrollEnabled: false,
       },
       {
@@ -223,6 +281,13 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
         title: lang === "fr-FR" ? "Films d'action et d'adrénaline" : "Action & Thrillers",
         type: "GENRE",
         items: actionMovies,
+        autoScrollEnabled: false,
+      },
+      {
+        id: "french-animation",
+        title: lang === "fr-FR" ? "Animation & Famille en Français" : "Animation & Family in French",
+        type: "GENRE",
+        items: frenchAnimation,
         autoScrollEnabled: false,
       },
       {
@@ -240,6 +305,63 @@ export async function getLiveCatalog(lang: "fr-FR" | "en-US" = "fr-FR") {
         autoScrollEnabled: false,
       },
     ],
+  };
+}
+
+// Récupérer plus de 100 films français avec pagination pour la page Cinéma Français
+export async function getFrenchCinemaCatalog(page = 1, genre = "all", lang: "fr-FR" | "en-US" = "fr-FR") {
+  const genreMap: Record<string, string> = {
+    comedie: "35",
+    action: "28",
+    thriller: "53",
+    drame: "18",
+    animation: "16",
+    romance: "10749",
+  };
+
+  const params: Record<string, string> = {
+    language: lang,
+    with_original_language: "fr",
+    sort_by: "popularity.desc",
+    page: String(page),
+  };
+
+  if (genre !== "all" && genreMap[genre]) {
+    params.with_genres = genreMap[genre];
+  }
+
+  // Si l'utilisateur demande page 1, nous pouvons agréger plusieurs pages pour lui fournir plus de 100 films d'un coup !
+  const [p1, p2, p3, p4, p5] = await Promise.all([
+    fetchFromTMDB("/discover/movie", { ...params, page: "1" }),
+    fetchFromTMDB("/discover/movie", { ...params, page: "2" }),
+    fetchFromTMDB("/discover/movie", { ...params, page: "3" }),
+    fetchFromTMDB("/discover/movie", { ...params, page: "4" }),
+    fetchFromTMDB("/discover/movie", { ...params, page: "5" }),
+  ]);
+
+  const allRaw = [
+    ...(p1?.results || []),
+    ...(p2?.results || []),
+    ...(p3?.results || []),
+    ...(p4?.results || []),
+    ...(p5?.results || []),
+  ];
+
+  // Déduplication par ID
+  const seen = new Set<number>();
+  const uniqueItems: TMDBMedia[] = [];
+
+  for (const item of allRaw) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      uniqueItems.push(formatTMDBItem(item, "MOVIE"));
+    }
+  }
+
+  return {
+    items: uniqueItems,
+    totalCount: uniqueItems.length,
+    totalPages: p1?.total_pages || 10,
   };
 }
 
