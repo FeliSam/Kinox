@@ -30,13 +30,42 @@ function SearchContent() {
     }
 
     setLoading(true);
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (type) params.set("type", type);
+    const TMDB_KEY = "4e44d9029b1270a757cddc766a1bcb63";
 
-    fetch(`/api/v1/search?${params.toString()}`)
+    // Recherche via API TMDB
+    fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&language=fr-FR&query=${encodeURIComponent(query.trim())}&include_adult=false`)
       .then((r) => r.json())
-      .then((d) => setResults(d.results || []))
+      .then((d) => {
+        const formatted = (d.results || [])
+          .filter((item: any) => item.media_type === "movie" || item.media_type === "tv")
+          .map((item: any) => ({
+            id: `tmdb-${item.id}`,
+            tmdbId: item.id,
+            name: item.title || item.name,
+            synopsis: item.overview || "Synopsis non communiqué.",
+            type: item.media_type === "tv" ? "SERIES" : "MOVIE",
+            releaseYear: parseInt((item.release_date || item.first_air_date || "2025").split("-")[0]),
+            ratingScore: item.vote_average ? Math.round(item.vote_average * 10) / 10 : 8.0,
+            matchScore: Math.min(99, Math.max(75, Math.round((item.vote_average || 7.5) * 10) + 5)),
+            posterUrl: item.poster_path
+              ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+              : "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+            bannerUrl: item.backdrop_path
+              ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+              : `https://image.tmdb.org/t/p/w500${item.poster_path}`,
+            genres: ["Cinéma"],
+            trailerUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+            hlsManifestUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            mp4FallbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+          }));
+
+        // Filtrer par type si sélectionné
+        if (type) {
+          setResults(formatted.filter((f: any) => f.type === type));
+        } else {
+          setResults(formatted);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [query, type]);

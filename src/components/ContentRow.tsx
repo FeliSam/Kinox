@@ -3,10 +3,12 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play as PlayIcon } from "lucide-react";
 import ContentCard from "./ContentCard";
+import Top10Card from "./Top10Card";
 
 interface ContentRowProps {
   title: string;
   items: any[];
+  type?: string;
   onOpenDetails: (title: any) => void;
   aspectRatio?: "poster" | "landscape";
   autoScrollConfig?: boolean;
@@ -18,6 +20,7 @@ interface ContentRowProps {
 export default function ContentRow({
   title,
   items,
+  type = "TRENDING",
   onOpenDetails,
   aspectRatio = "poster",
   autoScrollConfig = false,
@@ -232,20 +235,31 @@ export default function ContentRow({
       {/* Conteneur défilant des cartes */}
       <div
         ref={containerRef}
-        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth px-4 sm:px-6 lg:px-8 py-2 focus:outline-none"
+        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth px-4 sm:px-6 lg:px-8 py-4 focus:outline-none overflow-y-visible"
         tabIndex={0}
         aria-label={`Contenus de la rangée ${title}`}
       >
-        {items.map((item) => (
-          <ContentCard
-            key={item.id}
-            title={item}
-            onOpenDetails={onOpenDetails}
-            aspectRatio={aspectRatio}
-            isInMyList={myListIds.has(item.id)}
-            onToggleMyList={onToggleMyList}
-          />
-        ))}
+        {items.map((item, idx) =>
+          type === "TOP_10" ? (
+            <Top10Card
+              key={item.id}
+              rank={idx + 1}
+              title={item}
+              onOpenDetails={onOpenDetails}
+              isInMyList={myListIds.has(item.id)}
+              onToggleMyList={onToggleMyList}
+            />
+          ) : (
+            <ContentCard
+              key={item.id}
+              title={item}
+              onOpenDetails={onOpenDetails}
+              aspectRatio={aspectRatio}
+              isInMyList={myListIds.has(item.id)}
+              onToggleMyList={onToggleMyList}
+            />
+          )
+        )}
       </div>
 
       {/* Bouton Suivant */}

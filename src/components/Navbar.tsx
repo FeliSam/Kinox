@@ -12,6 +12,8 @@ interface NavbarProps {
   onProfileChange?: (profile: any) => void;
   autoScrollPreference?: boolean;
   onToggleAutoScroll?: (enabled: boolean) => void;
+  currentLang?: "fr-FR" | "en-US";
+  onLanguageChange?: (lang: "fr-FR" | "en-US") => void;
 }
 
 export default function Navbar({
@@ -21,6 +23,8 @@ export default function Navbar({
   onProfileChange,
   autoScrollPreference = false,
   onToggleAutoScroll,
+  currentLang = "fr-FR",
+  onLanguageChange,
 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -107,7 +111,35 @@ export default function Navbar({
         </div>
 
         {/* Actions à droite */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Sélecteur de Langue FR / EN */}
+          {onLanguageChange && (
+            <div className="flex items-center bg-[#12141C] border border-[#2B3044] rounded-full p-0.5 text-xs">
+              <button
+                onClick={() => onLanguageChange("fr-FR")}
+                className={`px-2 py-0.5 rounded-full font-bold transition-all ${
+                  currentLang === "fr-FR"
+                    ? "bg-red-600 text-white shadow"
+                    : "text-gray-400 hover:text-white"
+                }`}
+                title="Catalogue en Français"
+              >
+                FR
+              </button>
+              <button
+                onClick={() => onLanguageChange("en-US")}
+                className={`px-2 py-0.5 rounded-full font-bold transition-all ${
+                  currentLang === "en-US"
+                    ? "bg-red-600 text-white shadow"
+                    : "text-gray-400 hover:text-white"
+                }`}
+                title="Catalog in English"
+              >
+                EN
+              </button>
+            </div>
+          )}
+
           {/* Recherche */}
           <div className="relative flex items-center">
             {searchOpen ? (
