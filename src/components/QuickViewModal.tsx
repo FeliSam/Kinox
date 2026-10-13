@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { X, Play, Plus, Check, Star, Calendar, Clock, Globe, Volume2, VolumeX } from "lucide-react";
+import { X, Play, Plus, Check, Star, Calendar, Clock, Globe, Volume2, VolumeX, Award } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { fetchOmdbByTitle, extractScores, OmdbMovieData } from "@/lib/omdb";
 
 interface QuickViewModalProps {
   title: any | null;
@@ -24,6 +25,7 @@ export default function QuickViewModal({
   const [loading, setLoading] = useState(false);
   const [inList, setInList] = useState(isInMyList);
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar">("overview");
+  const [omdbData, setOmdbData] = useState<OmdbMovieData | null>(null);
 
   useEffect(() => {
     setInList(isInMyList);
@@ -32,6 +34,14 @@ export default function QuickViewModal({
   useEffect(() => {
     if (!title) return;
     setLoading(true);
+
+    // Charger les notes OMDb (IMDb, Rotten Tomatoes, Oscars) en tâche de fond
+    const searchTitle = title.originalTitle || title.name;
+    if (searchTitle) {
+      fetchOmdbByTitle(searchTitle, title.releaseYear)
+        .then((res) => setOmdbData(res))
+        .catch(() => setOmdbData(null));
+    }
 
     const tmdbId = title.tmdbId || (typeof title.id === "string" && title.id.startsWith("tmdb-") ? title.id.replace("tmdb-", "") : null);
 
@@ -80,6 +90,7 @@ export default function QuickViewModal({
   const similar = current.similarTitles || [];
   const cast = current.cast || [];
   const matchScore = current.matchScore || Math.min(99, Math.round((current.ratingScore || 8.5) * 10) + 5);
+  const scores = extractScores(omdbData);
 
   return (
     <div
@@ -177,7 +188,29 @@ export default function QuickViewModal({
                 <span className="bg-white/10 text-gray-300 px-2 py-0.5 rounded text-xs font-bold">
                   Spatial Audio
                 </span>
+                {scores.imdb && (
+                  <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 shadow-sm">
+                    {scores.imdb} IMDb
+                  </span>
+                )}
+                {scores.rottenTomatoes && (
+                  <span className="bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 shadow-sm">
+                    🍅 {scores.rottenTomatoes} Rotten Tomatoes
+                  </span>
+                )}
+                {scores.metascore && (
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-xs font-bold shadow-sm">
+                    Metascore {scores.metascore}
+                  </span>
+                )}
               </div>
+
+              {scores.awards && (
+                <div className="flex items-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
+                  <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="font-medium">{scores.awards}</span>
+                </div>
+              )}
 
               <p className="text-sm sm:text-base text-gray-200 leading-relaxed">
                 {current.synopsis}
