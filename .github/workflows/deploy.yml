@@ -41,6 +41,7 @@ jobs:
       - name: Compilation et Export Statique Next.js
         env:
           NEXT_EXPORT: "true"
+          NEXT_PUBLIC_BASE_PATH: "/Kinox"
           NODE_ENV: "production"
         run: npm run build
 
