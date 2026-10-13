@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  kinox-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kinox-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://kinox_user:kinox_secret_pwd@postgres:5432/kinox_db?schema=public
+      - JWT_SECRET=kinox_production_jwt_super_secret_key_change_me
+      - NEXT_PUBLIC_APP_NAME=KINOX
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: kinox-postgres
+    environment:
+      POSTGRES_USER: kinox_user
+      POSTGRES_PASSWORD: kinox_secret_pwd
+      POSTGRES_DB: kinox_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kinox_user -d kinox_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

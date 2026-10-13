@@ -1,0 +1,325 @@
+// Prisma Schema for KINOX streaming platform
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  role          String         @default("USER") // USER, ADMIN
+  status        String         @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profiles      Profile[]
+  subscriptions Subscription[]
+  auditLogs     AdminAuditLog[]
+}
+
+model Profile {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  avatar         String          @default("/avatars/default.png")
+  language       String          @default("fr")
+  maturityRating String          @default("18+") // All, 10+, 12+, 16+, 18+
+  autoPlayNext   Boolean         @default(true)
+  autoPlayPreview Boolean        @default(false)
+  autoScroll     Boolean         @default(false) // Horizontal row auto-scroll (disabled by default)
+  autoScrollSpeed Int            @default(30) // pixels per second
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  myList         MyListItem[]
+  watchProgress  WatchProgress[]
+  watchEvents    WatchEvent[]
+  searchHistory  SearchHistory[]
+}
+
+model Plan {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  price         Float
+  currency      String         @default("EUR")
+  interval      String         @default("month") // month, year
+  maxScreens    Int            @default(2)
+  maxQuality    String         @default("1080p") // 720p, 1080p, 4K+HDR
+  hasAds        Boolean        @default(false)
+  features      String         @default("[]") // JSON string array
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId         String
+  plan           Plan           @relation(fields: [planId], references: [id])
+  status         String         @default("ACTIVE") // ACTIVE, TRIALING, PAST_DUE, CANCELED
+  provider       String         @default("MOCK_PAYMENT")
+  externalSubId  String?
+  currentPeriodStart DateTime   @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean    @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model PaymentEvent {
+  id             String         @id @default(uuid())
+  externalId     String         @unique
+  provider       String
+  eventType      String
+  status         String
+  amount         Float
+  currency       String         @default("EUR")
+  payload        String?        // Metadata JSON
+  createdAt      DateTime       @default(now())
+}
+
+model Title {
+  id              String         @id @default(uuid())
+  slug            String         @unique
+  name            String
+  synopsis        String
+  type            String         @default("MOVIE") // MOVIE, SERIES, DOCUMENTARY
+  releaseYear     Int
+  maturityRating  String         @default("12+")
+  featured        Boolean        @default(false)
+  isPublished     Boolean        @default(true)
+  durationMinutes Int?           // For movies
+  posterUrl       String
+  bannerUrl       String
+  trailerUrl      String?
+  hlsManifestUrl  String?        // Video HLS master playlist URL
+  mp4FallbackUrl  String?
+  ratingScore     Float          @default(8.5)
+  audioLanguages  String         @default("[\"Français\", \"Anglais\"]") // JSON array
+  subtitleLanguages String       @default("[\"Français\", \"Anglais\"]") // JSON array
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  genres          TitleGenre[]
+  seasons         Season[]
+  episodes        Episode[]      // For single movie / direct play
+  mediaAssets     MediaAsset[]
+  playbackSources PlaybackSource[]
+  timedSegments   TimedSegment[]
+  myListItems     MyListItem[]
+  watchProgress   WatchProgress[]
+  watchEvents     WatchEvent[]
+  collectionItems CollectionItem[]
+}
+
+model Genre {
+  id        String       @id @default(uuid())
+  name      String       @unique
+  slug      String       @unique
+  createdAt DateTime     @default(now())
+
+  titles    TitleGenre[]
+}
+
+model TitleGenre {
+  titleId   String
+  title     Title        @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  genreId   String
+  genre     Genre        @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([titleId, genreId])
+}
+
+model Season {
+  id           String     @id @default(uuid())
+  titleId      String
+  title        Title      @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  name         String
+  synopsis     String?
+  posterUrl    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  episodes     Episode[]
+
+  @@unique([titleId, seasonNumber])
+}
+
+model Episode {
+  id              String         @id @default(uuid())
+  titleId         String
+  title           Title          @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  seasonId        String?
+  season          Season?        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeNumber   Int            @default(1)
+  name            String
+  synopsis        String?
+  durationSeconds Int            @default(2400)
+  thumbnailUrl    String
+  hlsManifestUrl  String?
+  mp4FallbackUrl  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  timedSegments   TimedSegment[]
+  playbackSources PlaybackSource[]
+  watchProgress   WatchProgress[]
+}
+
+model TimedSegment {
+  id          String   @id @default(uuid())
+  titleId     String?
+  title       Title?   @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  episodeId   String?
+  episode     Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  type        String   // INTRO, OUTRO, RECAP
+  startSeconds Float
+  endSeconds   Float
+  label       String   @default("Passer l'introduction")
+  createdAt   DateTime @default(now())
+}
+
+model MediaAsset {
+  id             String    @id @default(uuid())
+  titleId        String?
+  title          Title?    @relation(fields: [titleId], references: [id], onDelete: SetNull)
+  assetType      String    // VIDEO, TRAILER, POSTER, BANNER, SUBTITLE
+  storageKey     String
+  status         String    @default("READY") // PENDING, PROCESSING, READY, FAILED
+  durationSec    Int?
+  codec          String?   // H.264, H.265, AAC
+  resolution     String?   // 1080p, 4K, 720p
+  fileSizeBytes  Int?
+  publicUrl      String
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model PlaybackSource {
+  id              String    @id @default(uuid())
+  titleId         String?
+  title           Title?    @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  episodeId       String?
+  episode         Episode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  manifestUrl     String
+  format          String    @default("HLS") // HLS, DASH, MP4
+  drmType         String?   // NONE, WIDEVINE, FAIRPLAY
+  territoryRule   String    @default("GLOBAL") // GLOBAL, FR, EU
+  status          String    @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt       DateTime  @default(now())
+}
+
+model HomeSection {
+  id          String    @id @default(uuid())
+  title       String
+  type        String    // TRENDING, RECENT, RECOMMENDED, GENRE, CONTINUE_WATCHING, MY_LIST
+  genreSlug   String?   // If type is GENRE
+  displayOrder Int       @default(0)
+  autoScrollEnabled Boolean @default(false)
+  isVisible   Boolean   @default(true)
+  criteria    String?   // Filter query criteria JSON
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Collection {
+  id          String           @id @default(uuid())
+  name        String
+  slug        String           @unique
+  description String?
+  bannerUrl   String?
+  createdAt   DateTime         @default(now())
+
+  items       CollectionItem[]
+}
+
+model CollectionItem {
+  id           String     @id @default(uuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  titleId      String
+  title        Title      @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  order        Int        @default(0)
+
+  @@unique([collectionId, titleId])
+}
+
+model WatchProgress {
+  id              String    @id @default(uuid())
+  profileId       String
+  profile         Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  titleId         String
+  title           Title     @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  episodeId       String?
+  episode         Episode?  @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  positionSeconds Float     @default(0)
+  durationSeconds Float     @default(0)
+  completed       Boolean   @default(false)
+  lastWatchedAt   DateTime  @default(now())
+
+  @@unique([profileId, titleId])
+}
+
+model WatchEvent {
+  id         String   @id @default(uuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  titleId    String
+  title      Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  eventType  String   // PLAY, PAUSE, SEEK, COMPLETE, ERROR
+  positionSec Float   @default(0)
+  timestamp  DateTime @default(now())
+}
+
+model MyListItem {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  titleId   String
+  title     Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([profileId, titleId])
+}
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  query     String
+  createdAt DateTime @default(now())
+}
+
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // TITLE_CREATED, TITLE_DELETED, MEDIA_UPLOADED, SETTINGS_UPDATED
+  target    String
+  metadata  String?  // JSON string
+  createdAt DateTime @default(now())
+}
+
+model SiteBrandSetting {
+  id              String   @id @default("singleton")
+  siteName        String   @default("KINOX")
+  tagline         String   @default("Le streaming cinématographique haute fidélité")
+  logoText        String   @default("KINOX")
+  logoUrl         String?
+  accentColor     String   @default("#E50914")
+  secondaryColor  String   @default("#F59E0B")
+  footerLinks     String   @default("[{\"label\":\"Centre d'aide\",\"url\":\"/help\"},{\"label\":\"Conditions d'utilisation\",\"url\":\"/terms\"},{\"label\":\"Confidentialité\",\"url\":\"/privacy\"},{\"label\":\"Contact\",\"url\":\"/contact\"}]")
+  updatedAt       DateTime @updatedAt
+}
