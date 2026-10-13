@@ -38,6 +38,12 @@ jobs:
           npx prisma db push
           node scripts/seed.mjs
 
+      - name: Préparation pour export statique GitHub Pages (exclusion des routes API serveur)
+        run: |
+          mkdir -p src_api_backup
+          cp -r src/app/api src_api_backup/
+          rm -rf src/app/api
+
       - name: Compilation et Export Statique Next.js
         env:
           NEXT_EXPORT: "true"
